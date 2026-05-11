@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>nasplus AI 지식 서비스 (RAG)</title>
+
+	<!-- Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+	<!-- Icons (FontAwesome) -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+	<!-- Tailwind CSS CDN -->
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					fontFamily: {
+						sans: ['"Noto Sans KR"', 'sans-serif'],
+					},
+					colors: {
+						darkblue: '#1e293b', /* slate-800 */
+						skyblue: '#38bdf8', /* sky-400 */
+					}
+				}
+			}
+		}
+	</script>
+
+	<!-- Custom CSS for Animations -->
+	<style>
+	  html {
+		  scroll-behavior: smooth;
+	  }
+	  body {
+		  font-family: 'Noto Sans KR', sans-serif;
+		  color: #334155;
+	  }
+
+	  /* Initial states for scroll animations */
+	  .reveal-up {
+		  opacity: 0;
+		  transform: translateY(40px);
+		  transition: all 0.8s ease-out;
+	  }
+	  .reveal-left {
+		  opacity: 0;
+		  transform: translateX(-40px);
+		  transition: all 0.8s ease-out;
+	  }
+	  .reveal-right {
+		  opacity: 0;
+		  transform: translateX(40px);
+		  transition: all 0.8s ease-out;
+	  }
+
+	  /* Active states */
+	  .reveal-up.active, .reveal-left.active, .reveal-right.active {
+		  opacity: 1;
+		  transform: translate(0);
+	  }
+
+	  /* Staggered delay classes */
+	  .delay-100 { transition-delay: 100ms; }
+	  .delay-200 { transition-delay: 200ms; }
+	  .delay-300 { transition-delay: 300ms; }
+	  .delay-400 { transition-delay: 400ms; }
+
+	  /* Flowchart connector line */
+	  @media (min-width: 768px) {
+		  .flow-connector::after {
+			  content: '';
+			  position: absolute;
+			  top: 50%;
+			  right: -2rem;
+			  width: 2rem;
+			  height: 2px;
+			  background-color: #cbd5e1;
+			  z-index: 0;
+		  }
+		  .flow-connector:last-child::after {
+			  display: none;
+		  }
+	  }
+	</style>
+</head>
+<body class="bg-slate-50 antialiased overflow-x-hidden">
+
+<!-- 1. Hero Section -->
+<header class="bg-darkblue text-white relative overflow-hidden py-24 lg:py-32">
+	<div class="absolute inset-0 bg-gradient-to-br from-darkblue to-slate-900 opacity-90"></div>
+	<div class="relative max-w-6xl mx-auto px-6 text-center reveal-up active">
+		<div class="inline-block px-4 py-2 bg-slate-800 border border-slate-700 rounded-full text-skyblue font-medium text-sm mb-6">
+			Next-Gen Enterprise Search
+		</div>
+		<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+			우리 회사만의 스마트한 지식 비서, <br>
+			<span class="text-skyblue">nasplus RAG</span>
+		</h1>
+		<p class="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">
+			수만 장의 사내 문서를 단 <strong class="text-white font-bold">5초</strong> 만에 읽고 정확한 답을 드립니다.
+		</p>
+		<div class="mt-10">
+			<a href="#concept" class="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-darkblue bg-skyblue rounded-lg hover:bg-sky-300 transition-colors duration-300">
+				기술 알아보기 <i class="fa-solid fa-arrow-down ml-2"></i>
+			</a>
+		</div>
+	</div>
+</header>
+
+<!-- 2. Section 1: RAG란 무엇인가? -->
+<section id="concept" class="py-20 lg:py-28 bg-white">
+	<div class="max-w-6xl mx-auto px-6">
+		<div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+			<div class="w-full lg:w-1/2 reveal-left">
+				<h2 class="text-sm font-bold text-skyblue tracking-widest uppercase mb-2">Concept</h2>
+				<h3 class="text-3xl md:text-4xl font-bold text-darkblue mb-6">RAG란 무엇인가요?</h3>
+				<div class="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-6 relative">
+					<i class="fa-solid fa-quote-left text-3xl text-slate-200 absolute top-4 left-4"></i>
+					<p class="text-lg font-medium text-slate-700 relative z-10 pl-6 pt-2">
+						"똑똑하지만 우리 회사는 모르는 AI(LLM)에게 <br> <span class="text-skyblue font-bold">사내 전용 요약집</span>을 쥐여주는 기술"
+					</p>
+				</div>
+				<p class="text-slate-600 leading-relaxed mb-4">
+					일반적인 생성형 AI는 학습된 데이터의 기억력에만 의존합니다. 이로 인해 사실이 아닌 정보를 그럴듯하게 지어내는 <strong>'환각(Hallucination)'</strong> 현상이 발생할 수 있습니다.
+				</p>
+				<p class="text-slate-600 leading-relaxed">
+					RAG(검색 증강 생성)는 AI가 답변을 생성하기 <strong>전에</strong> 회사 내부의 검증된 데이터베이스를 먼저 검색하여 참고합니다. 이를 통해 사실 기반의 정확하고 신뢰할 수 있는 답변만을 제공합니다.
+				</p>
+			</div>
+			<div class="w-full lg:w-1/2 reveal-right">
+				<div class="relative bg-slate-100 rounded-2xl p-8 aspect-video flex items-center justify-center border border-slate-200">
+					<!-- Abstract Illustration of RAG Concept -->
+					<div class="flex items-center justify-center gap-4">
+						<div class="text-center">
+							<div class="w-20 h-20 bg-darkblue rounded-full flex items-center justify-center mb-3 mx-auto shadow-lg">
+								<i class="fa-solid fa-database text-3xl text-white"></i>
+							</div>
+							<span class="text-sm font-bold text-slate-600">사내 데이터</span>
+						</div>
+						<i class="fa-solid fa-plus text-slate-400 text-xl"></i>
+						<div class="text-center">
+							<div class="w-20 h-20 bg-skyblue rounded-full flex items-center justify-center mb-3 mx-auto shadow-lg">
+								<i class="fa-solid fa-brain text-3xl text-darkblue"></i>
+							</div>
+							<span class="text-sm font-bold text-slate-600">LLM (AI)</span>
+						</div>
+						<i class="fa-solid fa-arrow-right text-slate-400 text-xl"></i>
+						<div class="text-center">
+							<div class="w-24 h-24 bg-white border-4 border-skyblue rounded-xl flex items-center justify-center mb-3 mx-auto shadow-lg relative">
+								<i class="fa-solid fa-check text-4xl text-skyblue"></i>
+								<div class="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
+									<i class="fa-solid fa-shield text-xs text-white"></i>
+								</div>
+							</div>
+							<span class="text-sm font-bold text-slate-800">정확한 답변</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- 3. Section 2: 일반 검색 vs RAG 검색 -->
+<section id="comparison" class="py-20 lg:py-28 bg-slate-50">
+	<div class="max-w-6xl mx-auto px-6">
+		<div class="text-center mb-16 reveal-up">
+			<h2 class="text-sm font-bold text-skyblue tracking-widest uppercase mb-2">Comparison</h2>
+			<h3 class="text-3xl md:text-4xl font-bold text-darkblue">일반 검색 vs RAG 검색</h3>
+		</div>
+
+		<div class="grid md:grid-cols-2 gap-8">
+			<!-- 일반 검색 카드 -->
+			<div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 reveal-up delay-100">
+				<div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+					<div class="w-14 h-14 bg-slate-100 text-slate-500 rounded-lg flex items-center justify-center text-2xl">
+						<i class="fa-solid fa-magnifying-glass"></i>
+					</div>
+					<div>
+						<h4 class="text-xl font-bold text-slate-800">기존 일반 검색</h4>
+						<p class="text-sm text-slate-500">키워드 매칭 방식</p>
+					</div>
+				</div>
+				<ul class="space-y-4">
+					<li class="flex items-start gap-3">
+						<i class="fa-solid fa-xmark text-red-400 mt-1"></i>
+						<p class="text-slate-600">키워드가 <strong class="text-slate-800">정확히 일치</strong>해야만 문서를 찾습니다.<br><span class="text-sm text-slate-500">(예: '휴가' 검색 시 '연차' 관련 문서는 누락됨)</span></p>
+					</li>
+					<li class="flex items-start gap-3">
+						<i class="fa-solid fa-xmark text-red-400 mt-1"></i>
+						<p class="text-slate-600">결과로 문서 목록만 제공하므로, 사용자가 <strong class="text-slate-800">직접 문서를 열어 읽고</strong> 답을 찾아야 합니다.</p>
+					</li>
+				</ul>
+			</div>
+
+			<!-- RAG 검색 카드 -->
+			<div class="bg-darkblue p-8 rounded-2xl shadow-lg border border-slate-700 relative reveal-up delay-200 transform md:-translate-y-4">
+				<div class="absolute -top-4 right-8 bg-skyblue text-darkblue text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+					nasplus AI
+				</div>
+				<div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-700">
+					<div class="w-14 h-14 bg-slate-800 border border-slate-600 text-skyblue rounded-lg flex items-center justify-center text-2xl shadow-inner">
+						<i class="fa-solid fa-sparkles"></i>
+					</div>
+					<div>
+						<h4 class="text-xl font-bold text-white">RAG 기반 검색</h4>
+						<p class="text-sm text-slate-400">의미론적 이해 방식</p>
+					</div>
+				</div>
+				<ul class="space-y-4">
+					<li class="flex items-start gap-3">
+						<i class="fa-solid fa-check text-skyblue mt-1"></i>
+						<p class="text-slate-300">단어의 <strong class="text-white">의미와 문맥을 이해</strong>하여 관련 문서를 찾습니다.<br><span class="text-sm text-slate-400">(예: '휴가'를 물어봐도 '연차' 규정을 정확히 매칭)</span></p>
+					</li>
+					<li class="flex items-start gap-3">
+						<i class="fa-solid fa-check text-skyblue mt-1"></i>
+						<p class="text-slate-300">검색된 문서를 AI가 종합하여, 질문에 대한 <strong class="text-white">정답을 완전한 문장으로 요약</strong>하여 즉시 제공합니다.</p>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- 4. Section 3: nasplus AI 어벤져스 -->
+<section id="tech-stack" class="py-20 lg:py-28 bg-white">
+	<div class="max-w-6xl mx-auto px-6">
+		<div class="text-center mb-16 reveal-up">
+			<h2 class="text-sm font-bold text-skyblue tracking-widest uppercase mb-2">Technology</h2>
+			<h3 class="text-3xl md:text-4xl font-bold text-darkblue">nasplus AI 어벤져스 (기술 스택)</h3>
+			<p class="mt-4 text-slate-600 max-w-2xl mx-auto">각 분야의 최고 성능을 자랑하는 최신 모델들을 결합하여 최적의 파이프라인을 구축했습니다.</p>
+		</div>
+
+		<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+			<!-- Stack 1 -->
+			<div class="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-skyblue hover:shadow-md transition-all reveal-up delay-100">
+				<div class="w-12 h-12 bg-white rounded-lg border border-slate-200 flex items-center justify-center text-darkblue text-xl mb-4 shadow-sm">
+					<i class="fa-solid fa-book-open-reader"></i>
+				</div>
+				<h4 class="font-bold text-lg text-slate-800 mb-1">Elasticsearch 9</h4>
+				<p class="text-xs text-skyblue font-bold mb-3">#지능형_사서</p>
+				<p class="text-sm text-slate-600 leading-relaxed">
+					한글 조사와 어미를 정밀하게 분석하는 최신 <strong>Nori 엔진</strong>을 탑재하여 빠르고 정확한 텍스트 기반 1차 탐색을 수행합니다.
+				</p>
+			</div>
+
+			<!-- Stack 2 -->
+			<div class="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-skyblue hover:shadow-md transition-all reveal-up delay-200">
+				<div class="w-12 h-12 bg-white rounded-lg border border-slate-200 flex items-center justify-center text-darkblue text-xl mb-4 shadow-sm">
+					<i class="fa-solid fa-language"></i>
+				</div>
+				<h4 class="font-bold text-lg text-slate-800 mb-1">bge-m3</h4>
+				<p class="text-xs text-skyblue font-bold mb-3">#의미_번역기</p>
+				<p class="text-sm text-slate-600 leading-relaxed">
+					사내 문서의 텍스트를 기계가 이해할 수 있는 AI 좌표(Vector)로 변환하여, 키워드를 넘어 문장의 <strong>'숨은 의미'</strong>를 포착합니다.
+				</p>
+			</div>
+
+			<!-- Stack 3 -->
+			<div class="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-skyblue hover:shadow-md transition-all reveal-up delay-300">
+				<div class="w-12 h-12 bg-white rounded-lg border border-slate-200 flex items-center justify-center text-darkblue text-xl mb-4 shadow-sm">
+					<i class="fa-solid fa-microscope"></i>
+				</div>
+				<h4 class="font-bold text-lg text-slate-800 mb-1">mxbai-reranker</h4>
+				<p class="text-xs text-skyblue font-bold mb-3">#정밀_검사원</p>
+				<p class="text-sm text-slate-600 leading-relaxed">
+					1차 검색된 수많은 후보 문서들을 질문과의 연관성 기준으로 다시 평가하여, 가장 정확한 정답만을 고르는 <strong>최종 면접관</strong> 역할입니다.
+				</p>
+			</div>
+
+			<!-- Stack 4 -->
+			<div class="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:border-skyblue hover:shadow-md transition-all reveal-up delay-400">
+				<div class="w-12 h-12 bg-white rounded-lg border border-slate-200 flex items-center justify-center text-darkblue text-xl mb-4 shadow-sm">
+					<i class="fa-brands fa-google"></i>
+				</div>
+				<h4 class="font-bold text-lg text-slate-800 mb-1">Gemma 4</h4>
+				<p class="text-xs text-skyblue font-bold mb-3">#답변_전문가</p>
+				<p class="text-sm text-slate-600 leading-relaxed">
+					구글의 최신 경량화 모델로, 리랭커가 선별한 신뢰도 높은 정보를 바탕으로 사용자에게 <strong>대화하듯 친절하게 답변</strong>을 작성합니다.
+				</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- 5. Section 4: 지식의 여행 (프로세스) -->
+<section id="process" class="py-20 lg:py-28 bg-slate-900 text-white relative overflow-hidden">
+	<!-- Background decorative elements -->
+	<div class="absolute top-0 right-0 w-96 h-96 bg-skyblue opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+	<div class="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500 opacity-5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+
+	<div class="max-w-6xl mx-auto px-6 relative z-10">
+		<div class="text-center mb-16 reveal-up">
+			<h2 class="text-sm font-bold text-skyblue tracking-widest uppercase mb-2">Process</h2>
+			<h3 class="text-3xl md:text-4xl font-bold">지식의 여행 (프로세스 흐름도)</h3>
+		</div>
+
+		<!-- Step 1 -->
+		<div class="mb-16 reveal-up">
+			<div class="flex items-center gap-3 mb-6">
+				<div class="w-10 h-10 bg-skyblue text-darkblue rounded-full flex items-center justify-center font-bold text-lg">1</div>
+				<h4 class="text-2xl font-bold">지식 쌓기 (Ingestion)</h4>
+			</div>
+
+			<div class="grid md:grid-cols-4 gap-4">
+				<div class="bg-slate-800 border border-slate-700 rounded-lg p-5 text-center relative flow-connector">
+					<i class="fa-solid fa-server text-2xl text-slate-400 mb-3"></i>
+					<p class="font-bold text-sm">사내 DB / 문서</p>
+				</div>
+				<div class="bg-slate-800 border border-slate-700 rounded-lg p-5 text-center relative flow-connector">
+					<i class="fa-solid fa-scissors text-2xl text-slate-400 mb-3"></i>
+					<p class="font-bold text-sm">데이터 분할 (Chunking)</p>
+				</div>
+				<div class="bg-slate-800 border border-slate-700 rounded-lg p-5 text-center relative flow-connector">
+					<i class="fa-solid fa-square-root-variable text-2xl text-slate-400 mb-3"></i>
+					<p class="font-bold text-sm">벡터 변환 (Embedding)</p>
+				</div>
+				<div class="bg-darkblue border border-skyblue rounded-lg p-5 text-center">
+					<i class="fa-solid fa-database text-2xl text-skyblue mb-3"></i>
+					<p class="font-bold text-sm">ES 9 저장</p>
+				</div>
+			</div>
+			<div class="mt-4 text-sm text-slate-400 text-right">
+				<i class="fa-brands fa-java text-orange-400 mr-1"></i> * Java 21 <strong>가상 스레드(Virtual Threads)</strong>를 활용하여 대용량 문서 고속 병렬 처리
+			</div>
+		</div>
+
+		<!-- Step 2 -->
+		<div class="reveal-up delay-200">
+			<div class="flex items-center gap-3 mb-6">
+				<div class="w-10 h-10 bg-skyblue text-darkblue rounded-full flex items-center justify-center font-bold text-lg">2</div>
+				<h4 class="text-2xl font-bold">지식 찾기 (Retrieval)</h4>
+			</div>
+
+			<div class="grid md:grid-cols-4 gap-4">
+				<div class="bg-slate-800 border border-slate-700 rounded-lg p-5 text-center relative flow-connector">
+					<i class="fa-regular fa-comment-dots text-2xl text-slate-400 mb-3"></i>
+					<p class="font-bold text-sm">사용자 질문 입력</p>
+				</div>
+				<div class="bg-slate-800 border border-slate-700 rounded-lg p-5 text-center relative flow-connector">
+					<i class="fa-solid fa-layer-group text-2xl text-slate-400 mb-3"></i>
+					<p class="font-bold text-sm">하이브리드 검색<br><span class="text-xs font-normal text-slate-500">(키워드 + 의미)</span></p>
+				</div>
+				<div class="bg-slate-800 border border-slate-700 rounded-lg p-5 text-center relative flow-connector">
+					<i class="fa-solid fa-filter text-2xl text-slate-400 mb-3"></i>
+					<p class="font-bold text-sm">리랭킹 (Reranking)</p>
+				</div>
+				<div class="bg-darkblue border border-skyblue rounded-lg p-5 text-center">
+					<i class="fa-solid fa-robot text-2xl text-skyblue mb-3"></i>
+					<p class="font-bold text-sm text-white">최종 답변 생성</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- 6. Footer (Value & Security) -->
+<footer class="bg-darkblue border-t border-slate-800 py-16">
+	<div class="max-w-6xl mx-auto px-6 text-center reveal-up">
+		<div class="grid md:grid-cols-2 gap-8 mb-12">
+			<div class="flex flex-col items-center p-6">
+				<i class="fa-solid fa-shield-halved text-4xl text-skyblue mb-4"></i>
+				<h4 class="text-xl font-bold text-white mb-2">완벽한 보안 유지</h4>
+				<p class="text-slate-400 text-sm max-w-xs leading-relaxed">
+					외부 유출 걱정 없는 100% 사내 독립 서버(On-premise) 운영으로 기업의 핵심 데이터를 안전하게 보호합니다.
+				</p>
+			</div>
+			<div class="flex flex-col items-center p-6">
+				<i class="fa-solid fa-arrow-trend-up text-4xl text-skyblue mb-4"></i>
+				<h4 class="text-xl font-bold text-white mb-2">극대화된 업무 효율</h4>
+				<p class="text-slate-400 text-sm max-w-xs leading-relaxed">
+					단순 문서 탐색에 소요되던 시간을 획기적으로 줄이고, 실질적인 업무 가치 창출에 집중할 수 있습니다.
+				</p>
+			</div>
+		</div>
+
+		<div class="pt-8 border-t border-slate-800">
+			<p class="text-slate-500 text-sm font-medium">
+				&copy; 2026 nasplus. All rights reserved. | Next-Gen Enterprise RAG Service
+			</p>
+		</div>
+	</div>
+</footer>
+
+<!-- Scroll Animation Script -->
+<script>
+	document.addEventListener('DOMContentLoaded', () => {
+		// Options for the Intersection Observer
+		const observerOptions = {
+			root: null,
+			rootMargin: '0px',
+			threshold: 0.15 // Trigger when 15% of the element is visible
+		};
+
+		// Callback function to execute when elements intersect
+		const observerCallback = (entries, observer) => {
+			entries.forEach(entry => {
+				if (entry.isIntersecting) {
+					// Add 'active' class to trigger CSS transition
+					entry.target.classList.add('active');
+					// Optional: Stop observing once animated
+					observer.unobserve(entry.target);
+				}
+			});
+		};
+
+		const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+		// Select all elements with reveal classes
+		const revealElements = document.querySelectorAll('.reveal-up, .reveal-left, .reveal-right');
+		revealElements.forEach(el => observer.observe(el));
+	});
+</script>
+</body>
+</html>

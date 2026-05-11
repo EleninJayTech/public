@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>nasplus RAG 아키텍처 다이어그램</title>
+
+	<!-- Tailwind CSS (CDN) -->
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					fontFamily: {
+						sans: ['"Noto Sans KR"', 'sans-serif'],
+					}
+				}
+			}
+		}
+	</script>
+
+	<!-- Google Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+	<!-- FontAwesome (Icons) -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+	<!-- React & ReactDOM (CDN) -->
+	<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+	<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+	<!-- Babel (브라우저에서 JSX를 실시간 변환하기 위함) -->
+	<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+	<style>
+	  /* 커스텀 스크롤바 디자인 */
+	  .custom-scrollbar::-webkit-scrollbar {
+		  height: 8px;
+	  }
+	  .custom-scrollbar::-webkit-scrollbar-track {
+		  background: #f1f5f9;
+		  border-radius: 4px;
+	  }
+	  .custom-scrollbar::-webkit-scrollbar-thumb {
+		  background: #cbd5e1;
+		  border-radius: 4px;
+	  }
+	  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		  background: #94a3b8;
+	  }
+	</style>
+</head>
+<body class="bg-slate-50 font-sans">
+
+<!-- React가 렌더링될 영역 -->
+<div id="root"></div>
+
+<!-- React 컴포넌트 코드 -->
+<script type="text/babel">
+	const { useState, useEffect } = React;
+
+	// 전체 노드 데이터 정의 (Lucide 대신 FontAwesome 아이콘 클래스 사용)
+	const nodesData = [
+		// 1. Ingestion Pipeline
+		{ id: 'doc', title: '문서 수집', model: '사내 문서/DB', icon: 'fa-solid fa-database', pipeline: 'ingestion', desc: '다양한 포맷의 사내 규정집, 보고서, 위키 등 원시 데이터를 수집합니다. 정형 및 비정형 데이터를 모두 포함합니다.' },
+		{ id: 'chunk', title: '데이터 분할', model: 'Chunking', icon: 'fa-solid fa-scissors', pipeline: 'ingestion', desc: 'LLM이 소화할 수 있고 검색 효율을 높이기 위해 문서를 500~1000 토큰 단위로 의미를 유지하며 자릅니다.' },
+		{ id: 'embed1', title: '임베딩 변환', model: 'bge-m3', icon: 'fa-solid fa-network-wired', pipeline: 'ingestion', desc: '텍스트를 컴퓨터가 이해할 수 있는 다차원 숫자 배열(벡터)로 변환하여 문장의 숨은 의미를 수치화합니다.' },
+		{ id: 'store', title: '저장 및 인덱싱', model: 'Elasticsearch 9', icon: 'fa-solid fa-server', pipeline: 'ingestion', desc: 'Nori 형태소 분석기(키워드)와 벡터 데이터(의미)를 모두 활용할 수 있도록 멀티 인덱싱하여 ES9에 저장합니다.' },
+		// 2. Query Pipeline
+		{ id: 'query', title: '사용자 질문', model: '웹/챗 UI', icon: 'fa-solid fa-user', pipeline: 'query', desc: '사용자가 자연어로 질문을 입력합니다. (예: "올해 연차 규정이 어떻게 돼?")' },
+		{ id: 'embed2', title: '질문 임베딩', model: 'bge-m3', icon: 'fa-solid fa-network-wired', pipeline: 'query', desc: '사용자의 질문 역시 사내 DB와 동일한 차원의 벡터로 변환하여 비교(유사도 계산)가 가능하게 만듭니다.' },
+		{ id: 'search', title: '하이브리드 검색', model: 'Elasticsearch 9', icon: 'fa-solid fa-magnifying-glass', pipeline: 'query', desc: '키워드 매칭(Nori 기반 BM25)과 의미 기반 벡터 유사도 검색(kNN)을 동시에 수행하여 가장 관련성 높은 문서 후보군을 추출합니다.' },
+		{ id: 'rerank', title: '리랭킹', model: 'mxbai-reranker', icon: 'fa-solid fa-filter', pipeline: 'query', desc: '1차 검색된 수십 개의 문서를 질문과의 실질적 연관성을 기준으로 다시 평가하여, 최상위 문서만 정밀하게 추려냅니다.' },
+		{ id: 'prompt', title: '프롬프트 조합', model: 'Context + Query', icon: 'fa-solid fa-file-circle-plus', pipeline: 'query', desc: '리랭킹된 최상위 문서(Context)와 사용자의 원래 질문(Query)을 결합하여 LLM에게 전달할 최적의 지시문을 조립합니다.' },
+		{ id: 'llm', title: '답변 생성', model: 'Ollama / LLM', icon: 'fa-regular fa-message', pipeline: 'query', desc: '최종 프롬프트를 바탕으로 내부 LLM이 사내 데이터에만 기반하여 환각(거짓말) 없는 정확하고 자연스러운 답변을 생성합니다.' },
+	];
+
+	const animationSequence = [
+		[], ['doc'], ['chunk'], ['embed1'], ['store'], ['query'], ['embed2'], ['search', 'store'], ['rerank'], ['prompt'], ['llm']
+	];
+
+	function RAGArchitectureDiagram() {
+		const [hoveredId, setHoveredId] = useState(null);
+		const [currentStep, setCurrentStep] = useState(0);
+		const [isPlaying, setIsPlaying] = useState(false);
+
+		// 애니메이션 로직
+		useEffect(() => {
+			let interval;
+			if (isPlaying) {
+				interval = setInterval(() => {
+					setCurrentStep((prev) => {
+						if (prev >= animationSequence.length - 1) {
+							setIsPlaying(false);
+							return 0;
+						}
+						return prev + 1;
+					});
+				}, 1500);
+			}
+			return () => clearInterval(interval);
+		}, [isPlaying]);
+
+		const togglePlay = () => {
+			if (isPlaying) {
+				setIsPlaying(false);
+			} else {
+				setCurrentStep(0);
+				setIsPlaying(true);
+			}
+		};
+
+		let displayNodeId = hoveredId;
+		if (!displayNodeId && isPlaying && currentStep > 0) {
+			displayNodeId = animationSequence[currentStep][0];
+		}
+		const displayNode = nodesData.find(n => n.id === displayNodeId);
+
+		const isNodeActive = (id) => {
+			if (isPlaying) return animationSequence[currentStep].includes(id);
+			return hoveredId === id;
+		};
+
+		const NodeItem = ({ node, isLast }) => {
+			const active = isNodeActive(node.id);
+
+			return (
+				<div className="flex items-center">
+					<div
+						onMouseEnter={() => setHoveredId(node.id)}
+						onMouseLeave={() => setHoveredId(null)}
+						className={`flex flex-col items-center justify-center p-4 w-44 h-32 rounded-xl border-2 transition-all duration-300 cursor-pointer relative bg-white
+                                ${active
+							? 'border-sky-500 shadow-[0_0_20px_rgba(56,189,248,0.4)] scale-105 z-10'
+							: 'border-slate-200 hover:border-slate-400 hover:shadow-md z-0'
+						}`}
+					>
+						{/* ES9 DB 연동 시각적 뱃지 */}
+						{node.id === 'search' && (
+							<div className={`absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-800 text-sky-400 text-[10px] px-3 py-1 rounded-full font-bold whitespace-nowrap shadow-sm flex items-center transition-opacity duration-300 ${active || isNodeActive('store') ? 'opacity-100' : 'opacity-0'}`}>
+								<i className="fa-solid fa-server mr-1 text-[10px]"></i> ES9 인덱스 참조
+							</div>
+						)}
+
+						<i className={`${node.icon} text-3xl mb-3 transition-colors duration-300 ${active ? 'text-sky-500' : 'text-slate-600'}`}></i>
+						<span className="font-bold text-[13px] text-center text-slate-800 leading-tight mb-1">{node.title}</span>
+						<span className="text-[11px] text-slate-500 px-2 py-0.5 bg-slate-100 rounded-full text-center truncate w-full">{node.model}</span>
+					</div>
+
+					{/* 화살표 */}
+					{!isLast && (
+						<div className="px-3 md:px-6">
+							<i className={`fa-solid fa-arrow-right text-xl transition-all duration-300 ${isPlaying && active ? 'text-sky-500 translate-x-1' : 'text-slate-300'}`}></i>
+						</div>
+					)}
+				</div>
+			);
+		};
+
+		return (
+			<div className="min-h-screen p-6 md:p-10 flex flex-col items-center">
+				{/* Header */}
+				<header className="max-w-6xl w-full text-center mb-10">
+					<h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
+						nasplus <span className="text-sky-500">RAG</span> 시스템 아키텍처
+					</h1>
+					<p className="text-slate-500 text-sm md:text-base max-w-2xl mx-auto">
+						사내 데이터를 수집하고 학습하는 '적재 파이프라인'과 사용자 질문에 답하는 '검색 및 생성 파이프라인'의 전체 데이터 흐름도입니다.
+					</p>
+				</header>
+
+				{/* Diagram Area */}
+				<div className="max-w-6xl w-full flex flex-col gap-10 bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+
+					{/* 1. Ingestion Pipeline */}
+					<div className="w-full">
+						<div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+							<div className="w-6 h-6 rounded bg-slate-800 text-white flex items-center justify-center text-xs font-bold">1</div>
+							<h2 className="text-lg font-bold text-slate-800">데이터 적재 파이프라인 <span className="text-slate-400 font-normal text-sm ml-2">(Data Ingestion)</span></h2>
+						</div>
+						<div className="overflow-x-auto pb-6 custom-scrollbar">
+							<div className="flex flex-row items-center min-w-max px-2 pt-2">
+								{nodesData.filter(n => n.pipeline === 'ingestion').map((node, idx, arr) => (
+									<NodeItem key={node.id} node={node} isLast={idx === arr.length - 1} />
+								))}
+							</div>
+						</div>
+					</div>
+
+					{/* Separator */}
+					<div className="flex justify-center -my-4 relative z-0 opacity-50">
+						<div className="h-10 border-l-2 border-dashed border-slate-300"></div>
+					</div>
+
+					{/* 2. Query Pipeline */}
+					<div className="w-full">
+						<div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+							<div className="w-6 h-6 rounded bg-sky-500 text-white flex items-center justify-center text-xs font-bold">2</div>
+							<h2 className="text-lg font-bold text-slate-800">질문 및 답변 파이프라인 <span className="text-slate-400 font-normal text-sm ml-2">(Query & Generation)</span></h2>
+						</div>
+						<div className="overflow-x-auto pb-6 custom-scrollbar">
+							<div className="flex flex-row items-center min-w-max px-2 pt-4">
+								{nodesData.filter(n => n.pipeline === 'query').map((node, idx, arr) => (
+									<NodeItem key={node.id} node={node} isLast={idx === arr.length - 1} />
+								))}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div className="max-w-6xl w-full mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+					{/* Dynamic Details Panel */}
+					<div className="md:col-span-2 bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-800 flex items-start gap-4 min-h-[140px] transition-all">
+						{displayNode ? (
+							<>
+								<div className="bg-slate-800 p-4 rounded-xl shrink-0 flex items-center justify-center w-16 h-16">
+									<i className={`${displayNode.icon} text-3xl text-sky-400`}></i>
+								</div>
+								<div className="flex flex-col">
+									<div className="flex items-center gap-3 mb-2">
+										<h3 className="text-xl font-bold text-white">{displayNode.title}</h3>
+										<span className="text-xs font-mono bg-sky-900/50 text-sky-300 px-2.5 py-1 rounded-md border border-sky-800/50">
+                                                {displayNode.model}
+                                            </span>
+									</div>
+									<p className="text-slate-300 text-sm leading-relaxed">
+										{displayNode.desc}
+									</p>
+								</div>
+							</>
+						) : (
+							<div className="flex items-center justify-center w-full h-full opacity-60 gap-3 text-slate-400">
+								<i className="fa-solid fa-circle-info text-xl"></i>
+								<p>노드에 마우스를 올리거나 흐름 재생 버튼을 클릭하여 상세 정보를 확인하세요.</p>
+							</div>
+						)}
+					</div>
+
+					{/* Control Panel */}
+					<div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-center items-center">
+						<p className="text-sm font-bold text-slate-500 mb-4 tracking-wide uppercase">Simulation</p>
+						<button
+							onClick={togglePlay}
+							className={`flex items-center justify-center gap-2 w-full py-4 rounded-xl font-bold text-lg transition-all duration-300
+                                ${isPlaying
+								? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+								: 'bg-sky-500 text-white hover:bg-sky-400 shadow-lg shadow-sky-500/30'
+							}`}
+						>
+							{isPlaying ? (
+								<><i className="fa-solid fa-square"></i> 흐름 정지</>
+							) : (
+								<><i className="fa-solid fa-play"></i> 흐름 재생 (Play Flow)</>
+							)}
+						</button>
+
+						{isPlaying && (
+							<div className="mt-4 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+								<div
+									className="bg-sky-500 h-full transition-all duration-300 ease-linear"
+									style={{ width: `${(currentStep / (animationSequence.length - 1)) * 100}%` }}
+								></div>
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	// React 18 렌더링 방식
+	const root = ReactDOM.createRoot(document.getElementById('root'));
+	root.render(<RAGArchitectureDiagram />);
+</script>
+</body>
+</html>
