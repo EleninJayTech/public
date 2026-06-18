@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFA · Claude Code 구성·사용 가이드 (팀 공유판)</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#171c24; --panel2:#1e242e; --line:#2a323d;
+    --tx:#e6edf3; --tx2:#9aa7b4; --tx3:#6b7785;
+    --acc:#4aa3ff; --acc2:#7c5cff; --ok:#2ecc71; --warn:#ffb454; --bad:#ff6b6b;
+    --chip:#222a35; --rec:#16331f;
+    --radius:14px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  html[data-theme="light"]{
+    --bg:#f4f6f9; --panel:#ffffff; --panel2:#f0f3f7; --line:#dfe5ec;
+    --tx:#1a2129; --tx2:#5a6675; --tx3:#8b97a5; --chip:#eef2f7; --rec:#e6f7ec;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1020px;margin:0 auto;padding:0 22px 120px;}
+
+  header{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+  .head-in{max-width:1020px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .brand{font-weight:800;font-size:15px}.brand b{color:var(--acc)}
+  nav{display:flex;gap:3px;flex-wrap:wrap;margin-left:auto}
+  nav a{color:var(--tx2);text-decoration:none;font-size:13px;padding:6px 10px;border-radius:8px}
+  nav a:hover{background:var(--chip);color:var(--tx)}
+  .tgl{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--tx2);border-radius:8px;padding:6px 10px;font-size:13px}
+  .tgl:hover{color:var(--tx)}
+
+  .hero{padding:46px 0 14px}
+  .kicker{color:var(--acc2);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase}
+  h1{font-size:31px;line-height:1.25;margin:10px 0 8px;letter-spacing:-.5px}
+  .sub{color:var(--tx2);font-size:16px;max-width:760px}
+
+  .tldr{background:var(--rec);border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:12px;padding:16px 18px;margin:20px 0}
+  .tldr ul{margin:6px 0 0;padding-left:20px}.tldr li{margin:4px 0;font-size:14.5px}
+
+  section{padding:34px 0;border-top:1px solid var(--line)}
+  h2{font-size:22px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .n{font-family:var(--mono);font-size:14px;color:var(--bg);background:var(--acc);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-weight:700}
+  h3{font-size:16px;margin:18px 0 6px}
+  .lead{color:var(--tx2);margin:0 0 16px;max-width:820px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:14px 0}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:680px){.grid3{grid-template-columns:1fr}}
+
+  .note{display:flex;gap:12px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:14px 16px;margin:14px 0}
+  .note .ic{font-size:18px;flex:none}
+  .note.rec{border-left-color:var(--ok);background:var(--rec)}
+  .note.warn{border-left-color:var(--warn)}
+  .note.bad{border-left-color:var(--bad)}
+  .analogy{font-size:14px;color:var(--tx2);background:var(--chip);border-radius:10px;padding:12px 15px;margin-top:12px}
+  .analogy b{color:var(--acc)}
+
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--tx2);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .mono,code{font-family:var(--mono);font-size:12.5px;background:var(--chip);padding:1px 6px;border-radius:5px}
+  .g{color:var(--ok);font-weight:700}.r{color:var(--bad);font-weight:700}
+
+  .prob{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:8px 0}
+  .prob .pn{flex:none;width:26px;height:26px;border-radius:50%;background:var(--bad);color:#fff;font-weight:800;display:grid;place-items:center;font-size:13px}
+
+  .boxes{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;background:var(--panel2);border:1px dashed var(--line);border-radius:12px;padding:20px 14px;margin:12px 0}
+  .pbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;text-align:center;min-width:130px}
+  .pbox .t{font-weight:700;font-size:13px}.pbox .d{font-size:11px;color:var(--tx3);font-family:var(--mono);margin-top:2px}
+  .pbox.f{border-color:var(--acc)} .pbox.b{border-color:var(--ok)} .pbox.r{border-color:var(--acc2)}
+
+  .code{position:relative;background:#0b0e13;border:1px solid var(--line);border-radius:10px;margin:10px 0}
+  html[data-theme="light"] .code{background:#0f141b}
+  .code pre{margin:0;padding:14px 16px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#cdd9e5}
+  .code .cp{position:absolute;top:8px;right:8px;cursor:pointer;border:1px solid #2a323d;background:#171c24;color:#9aa7b4;border-radius:7px;padding:3px 9px;font-size:11px}
+  .code .cp:hover{color:#fff;border-color:var(--acc)}
+  .cm{color:#6b7785}
+
+  .steps{counter-reset:s;list-style:none;padding:0;margin:10px 0}
+  .steps li{position:relative;padding:10px 0 10px 40px;border-bottom:1px solid var(--line);font-size:14.5px}
+  .steps li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:9px;width:24px;height:24px;border-radius:7px;background:var(--acc);color:#fff;font-weight:700;font-size:12px;display:grid;place-items:center;font-family:var(--mono)}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+  .tab{flex:1 1 180px;cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:12px 14px;transition:.15s;min-width:0}
+  .tab:hover{border-color:var(--acc)}
+  .tab.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,var(--panel));box-shadow:0 0 0 1px var(--acc) inset}
+  .tab .lab{font-size:11px;font-family:var(--mono);color:var(--acc2);font-weight:700}
+  .tab .ti{font-weight:800;font-size:14.5px;margin:2px 0}
+  .tab .rf{display:inline-block;font-size:10px;background:var(--ok);color:#04240f;font-weight:800;padding:1px 7px;border-radius:999px;margin-left:6px}
+  .tp{display:none;animation:fade .2s}.tp.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  .pc{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  @media(max-width:600px){.pc{grid-template-columns:1fr}}
+  .pc h4{margin:0 0 4px;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
+  .pros h4{color:var(--ok)}.cons h4{color:var(--bad)}
+  .pc ul{margin:0;padding-left:18px}.pc li{font-size:13.5px;margin:4px 0}
+
+  .wiz{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:14px}
+  .q{font-weight:700;margin-bottom:10px}
+  .opts{display:flex;gap:10px;flex-wrap:wrap}
+  .opt{cursor:pointer;border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:9px 15px;font-size:14px}
+  .opt:hover{border-color:var(--acc)}
+  .ws{display:none}.ws.on{display:block;animation:fade .2s}
+  .res{display:none;text-align:center;padding:6px 0}.res.on{display:block;animation:fade .25s}
+  .res .big{font-size:22px;font-weight:800;margin:4px 0;color:var(--ok)}
+  .btn{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--tx);border-radius:9px;padding:8px 16px;font-size:14px;font-weight:600}
+  .btn:hover{border-color:var(--acc)}
+
+  .fname{font-family:var(--mono);font-size:11px;color:var(--tx3);padding:8px 4px 0}
+
+  .check{list-style:none;padding:0;margin:10px 0}
+  .check li{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:14.5px}
+  .check .bx{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--tx3);display:grid;place-items:center;font-size:14px;color:transparent;margin-top:1px}
+  .check li.done .bx{background:var(--ok);border-color:var(--ok);color:#04240f}
+  .check li.done .lb{color:var(--tx3);text-decoration:line-through}
+
+  .foot{color:var(--tx3);font-size:12.5px;text-align:center;padding-top:40px}
+</style>
+</head>
+<body>
+<header>
+  <div class="head-in">
+    <div class="brand"><b>Claude</b> 구성·사용 가이드</div>
+    <nav>
+      <a href="#now">상황</a>
+      <a href="#split">공유/개인</a>
+      <a href="#setup">구성 심기</a>
+      <a href="#cross">크로스-프로젝트</a>
+      <a href="#docs">docs 구성</a>
+      <a href="#daily">매일 사용</a>
+      <a href="#check">체크리스트</a>
+    </nav>
+    <button class="tgl" id="themeBtn">🌙 다크</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">팀 공유판 · SFA 프로젝트</div>
+    <h1>세 프로젝트에서 Claude Code를<br>어떻게 구성하고 함께 쓸까</h1>
+    <p class="sub">우리는 한 작업이 여러 프로젝트(프론트·백엔드·RAG)를 건드리는 일이 잦습니다. 그런데 Claude 기록이 <b>지금 열린 한 곳에만</b> 남고, <b>git에 공유도 안 되고</b> 있습니다. 이걸 어떻게 정리할지 처음부터 차근차근 봅니다.</p>
+
+    <div class="tldr">
+      <b>📌 30초 요약</b>
+      <ul>
+        <li>Claude 구성은 <b>"팀과 나눌 것"</b> 과 <b>"내 PC에만 둘 것"</b> 으로 나뉜다.</li>
+        <li>나눌 것(프로젝트 설명·명령·작업 기록)은 <b>git에 커밋</b>해서 공유한다.</li>
+        <li>한 작업이 여러 프로젝트를 건드리면 <b>각 프로젝트에 기록</b>을 남긴다.</li>
+        <li>모듈이 많아도 작업 기록은 <b>프로젝트당 한 세트</b>, 모듈은 태그로 구분.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 1. 상황 -->
+  <section id="now">
+    <h2><span class="n">1</span> 지금 우리 상황</h2>
+    <p class="lead">우리 코드는 세 개의 <b>독립된 프로젝트</b>로 나뉘어 있고, 여러 명이 이들을 오가며 개발합니다.</p>
+
+    <div class="boxes">
+      <div class="pbox f"><div class="t">🎨 프론트</div><div class="d">sfa-client-main</div></div>
+      <div class="pbox b"><div class="t">⚙️ 백엔드</div><div class="d">sfa-server · 모듈 多</div></div>
+      <div class="pbox r"><div class="t">🔎 RAG</div><div class="d">sfa-rag</div></div>
+    </div>
+
+    <p class="lead" style="margin-top:10px">한 기능이 <b>백엔드+프론트</b>를 같이 고치기도 하고, <b>RAG만</b> 고치기도 합니다. 각자 Claude 구성을 만들어 쓰지만 <b>자기 PC에만</b> 있고 <b>git에 안 올려서</b> 서로 못 봅니다. 그래서 풀 문제가 셋입니다.</p>
+
+    <div class="prob"><div class="pn">1</div><div><b>공유가 안 됨</b> — 기록을 git에 안 올려서 동료도 나도 서로의 기록을 못 본다.</div></div>
+    <div class="prob"><div class="pn">2</div><div><b>크로스-프로젝트 기록이 한 곳에만</b> — RAG에서 작업하며 백엔드도 고쳤는데 기록은 열린 RAG에만 남는다.</div></div>
+    <div class="prob"><div class="pn">3</div><div><b>모듈이 많을 때 문서 구성</b> — 백엔드·프론트는 모듈이 많아 <span class="mono">docs/library/</span>처럼 폴더로 나눌지 고민.</div></div>
+  </section>
+
+  <!-- 2. 공유/개인 -->
+  <section id="split">
+    <h2><span class="n">2</span> 공유할 것 vs 내 PC에만 둘 것</h2>
+    <p class="lead">Claude 구성은 네 종류입니다. 셋은 공유하고, 하나는 개인용으로 둡니다.</p>
+    <table>
+      <thead><tr><th style="width:22%">종류</th><th>무엇인가 / 예시</th><th style="width:20%">어떻게</th></tr></thead>
+      <tbody>
+        <tr><td>① <b>프로젝트 설명</b></td><td>이 프로젝트의 기술·DB·규칙 — <span class="mono">CLAUDE.md</span></td><td class="g">🟢 커밋(공유)</td></tr>
+        <tr><td>② <b>작업 명령</b></td><td>시작/종료 명령·권한 — <span class="mono">.claude/skills</span>, <span class="mono">.claude/settings.json</span></td><td class="g">🟢 커밋(공유)</td></tr>
+        <tr><td>③ <b>작업 기록</b></td><td>진행 로그·결정 — <span class="mono">docs/PROGRESS.md</span> 등</td><td class="g">🟢 커밋(공유)</td></tr>
+        <tr><td>④ <b>개인 구성</b></td><td>내 PC 전용 메모·권한 — <span class="mono">settings.local.json</span>, <span class="mono">CLAUDE.local.md</span></td><td class="r">🔴 커밋 안 함(개인)</td></tr>
+      </tbody>
+    </table>
+    <div class="analogy"><b>비유</b> — ①②③은 <b>"팀 위키"</b>(모두 보고 함께 갱신), ④는 <b>"내 책상 포스트잇"</b>(나만 본다).</div>
+
+    <h3>경계는 <span class="mono">.gitignore</span>가 지킨다</h3>
+    <p class="lead" style="margin:0 0 8px">각 프로젝트에 이 줄을 넣으면 ④(개인)는 자동으로 무시되고 ①②③만 커밋됩니다.</p>
+    <div class="code"><button class="cp">복사</button><pre><span class="cm"># Claude 개인 구성 — 커밋하지 않음</span>
+.claude/settings.local.json
+CLAUDE.local.md</pre></div>
+  </section>
+
+  <!-- 3. 구성 심기 -->
+  <section id="setup">
+    <h2><span class="n">3</span> 각 프로젝트에 구성 심기</h2>
+    <p class="lead">지금은 구성이 로컬에만 있으니, <b>세 프로젝트 각각</b>에서 한 번씩 합니다.</p>
+    <ol class="steps">
+      <li>이미 있는 Claude 구성(<span class="mono">CLAUDE.md</span>·<span class="mono">.claude</span>·<span class="mono">docs</span>)을 확인</li>
+      <li>위 <span class="mono">.gitignore</span>를 추가 (개인 파일 제외)</li>
+      <li>공유 대상 파일을 <b>git에 커밋·푸시</b></li>
+    </ol>
+    <div class="code"><button class="cp">복사</button><pre><span class="cm"># 각 프로젝트에서 한 번씩 (sfa-client-main, sfa-server, sfa-rag)</span>
+git add CLAUDE.md .claude docs .gitignore
+git commit -m "chore: Claude Code 팀 공유 구성 추가"
+git push</pre></div>
+    <div class="note rec"><span class="ic">✅</span><div><b>결과</b> — 동료가 <span class="mono">git pull</span> 하면 Claude 구성도 따라옵니다. 누가 어디서 열든 같은 규칙·같은 기록을 공유 → <b>1번 문제 해결</b>.</div></div>
+    <div class="note bad"><span class="ic">⚠️</span><div>진짜 비밀번호·키는 <b>절대 커밋하지 않습니다.</b> (별도 위치 <span class="mono">_secure_config</span> 등에 둡니다.)</div></div>
+  </section>
+
+  <!-- 4. 크로스-프로젝트 -->
+  <section id="cross">
+    <h2><span class="n">2번 문제</span> 크로스-프로젝트 기록 풀기</h2>
+    <style>#cross h2 .n{font-size:11px;width:auto;padding:0 8px}</style>
+    <p class="lead">한 작업이 여러 프로젝트를 건드릴 때, 기록이 한 곳에만 남는 문제입니다.</p>
+
+    <details open>
+      <summary style="cursor:pointer;font-weight:600;padding:8px 0">왜 한 곳에만 기록될까? (쉬운 풀이)</summary>
+      <p style="color:var(--tx2);font-size:14px">Claude는 <b>지금 열린 폴더</b>의 기록만 읽고 씁니다. 종료 기록 명령(<span class="mono">/wrap</span>)도 그 폴더의 <span class="mono">docs/</span>에만 씁니다. 그래서 RAG에서 열어 백엔드까지 고쳐도 기록은 <b>RAG에만</b> 남고, 백엔드 동료는 맥락을 못 봅니다.</p>
+    </details>
+    <div class="analogy"><b>비유</b> — 두 부서가 함께 한 회의인데 회의록을 <b>한 부서 폴더에만</b> 저장한 셈. 다른 부서는 그 결정이 있었는지 모릅니다.</div>
+
+    <div class="note rec"><span class="ic">🎯</span><div><b>해결 원칙</b> — 작업이 건드린 <b>프로젝트마다 기록</b>을 남긴다. 자세한 본문은 <b>주로 작업한 프로젝트</b> 한 곳, 다른 프로젝트엔 <b>짧은 한 줄 + 가리키는 링크</b>.</div></div>
+
+    <div class="card">
+      <b>예시</b> — RAG에서 작업했고 백엔드도 고쳤다면:
+      <table style="margin:8px 0 0">
+        <tr><td style="width:42%"><span class="mono">sfa-rag/docs/PROGRESS.md</span></td><td>자세한 본문 기록</td></tr>
+        <tr><td><span class="mono">sfa-server/docs/PROGRESS.md</span></td><td>"RAG 작업으로 함께 변경됨 → sfa-rag PROGRESS 참고" 한 줄</td></tr>
+      </table>
+      <p style="color:var(--tx2);font-size:13.5px;margin:8px 0 0">→ 어느 프로젝트 동료든 <b>자기 프로젝트 기록만 봐도</b> "왜 바뀌었는지" 따라갈 수 있습니다.</p>
+    </div>
+
+    <h3>어디까지 공유할지는 팀이 정한다 — 3가지 방법</h3>
+    <div class="tabs">
+      <div class="tab on" data-t="A"><div class="lab">방법 A</div><div class="ti">각 프로젝트 기록 + 교차 한 줄<span class="rf">추천</span></div></div>
+      <div class="tab" data-t="B"><div class="lab">방법 B</div><div class="ti">공유 기록 저장소(서브모듈)</div></div>
+      <div class="tab" data-t="C"><div class="lab">방법 C</div><div class="ti">하이브리드 (결정만 공유)</div></div>
+    </div>
+    <div class="tp on" data-t="A">
+      <div class="card">
+        <p style="margin-top:0;color:var(--tx2)">위 원칙 그대로. 새로 만들 저장소가 없습니다.</p>
+        <div class="pc">
+          <div class="pros"><h4>👍 장점</h4><ul><li>가장 단순 — 새 인프라 0</li><li>팀원은 자기 프로젝트만 보면 됨</li></ul></div>
+          <div class="cons"><h4>👎 단점</h4><ul><li>여러 프로젝트 걸친 결정은 살짝 중복</li><li>전체 흐름은 한눈에 안 보임</li></ul></div>
+        </div>
+      </div>
+    </div>
+    <div class="tp" data-t="B">
+      <div class="card">
+        <p style="margin-top:0;color:var(--tx2)">크로스-프로젝트 기록만 모으는 공용 저장소(서브모듈)를 따로 둡니다.</p>
+        <div class="pc">
+          <div class="pros"><h4>👍 장점</h4><ul><li>기록이 한 곳 — 분기 없음</li><li>전체 흐름을 다 봄</li></ul></div>
+          <div class="cons"><h4>👎 단점</h4><ul><li>새 저장소 + 서브모듈 운영 부담</li><li>전 팀이 추가 git 습관 필요</li></ul></div>
+        </div>
+      </div>
+    </div>
+    <div class="tp" data-t="C">
+      <div class="card">
+        <p style="margin-top:0;color:var(--tx2)">중요한 "결정"만 공용, 일상 "진행 로그"는 프로젝트별.</p>
+        <div class="pc">
+          <div class="pros"><h4>👍 장점</h4><ul><li>중요 결정은 안 엇갈림</li><li>일상 로그는 가볍게</li></ul></div>
+          <div class="cons"><h4>👎 단점</h4><ul><li>공용 저장소 1개는 운영</li><li>"이건 결정? 로그?" 판단 필요</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wiz">
+      <b>🧭 우리 팀엔 어느 방법? (2가지만 답해보세요)</b>
+      <div class="ws on" data-s="0" style="margin-top:12px">
+        <div class="q">Q1. 팀원이 <b>다른 프로젝트의 전체 흐름</b>까지 한눈에 봐야 하나요?</div>
+        <div class="opts"><div class="opt" data-q="0" data-v="no">아니요 — 자기 것 위주</div><div class="opt" data-q="0" data-v="yes">예 — 전체를 봐야</div></div>
+      </div>
+      <div class="ws" data-s="1">
+        <div class="q">Q2. 팀 전원이 <b>git 서브모듈</b>(추가 습관·관리)을 감당할 수 있나요?</div>
+        <div class="opts"><div class="opt" data-q="1" data-v="no">부담됨 — 단순하게</div><div class="opt" data-q="1" data-v="yes">감당 가능</div></div>
+      </div>
+      <div class="res" id="res">
+        <div style="color:var(--tx3);font-size:13px">추천</div>
+        <div class="big" id="resName">—</div>
+        <p id="resWhy" style="color:var(--tx2);max-width:520px;margin:4px auto 14px;font-size:14px"></p>
+        <button class="btn" onclick="resetWiz()">↺ 다시</button>
+      </div>
+    </div>
+
+    <div class="note"><span class="ic">📎</span><div><b>추천: 방법 A로 시작.</b> 새로 만들 게 없고 단순합니다. "전체 흐름을 봐야 한다"는 필요가 커지면 그때 C·B로 키웁니다. <span style="color:var(--tx3)">(한 사람이 세 프로젝트를 한 폴더에서 함께 여는 "통합 방식"은 별도 문서에서 다룹니다.)</span></div></div>
+  </section>
+
+  <!-- 5. docs 구성 -->
+  <section id="docs">
+    <h2><span class="n">3번 문제</span> 모듈이 많을 때 docs 구성</h2>
+    <style>#docs h2 .n{font-size:11px;width:auto;padding:0 8px}</style>
+    <p class="lead">백엔드(10모듈)·프론트(여러 앱)처럼 모듈이 많아도 규칙은 단순합니다.</p>
+
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--bad)">작업 기록 3종 — 프로젝트당 "한 세트" (모듈로 안 쪼갬)</h3>
+      <p style="color:var(--tx2);font-size:14px;margin:0"><span class="mono">PROGRESS·DECISIONS·PROJECT_PLAN</span>은 모듈로 나누지 않고, 항목 앞에 <b>모듈 태그</b>를 붙입니다.</p>
+      <div class="code"><button class="cp">복사</button><pre>- [library] 자료 카드 정렬 버그 수정
+- [work-support] 게시판 카테고리 트리 추가</pre></div>
+      <p style="color:var(--tx2);font-size:13.5px;margin:0"><b>왜?</b> ① <span class="mono">/resume·/wrap</span>이 정해진 한 파일을 읽고 씀(쪼개면 깨짐) ② 한 작업이 여러 모듈을 건드려 <b>시간 흐름이 흩어짐</b>. PROJECT_PLAN은 한 파일 안 모듈별 섹션으로 충분.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--ok)">주제·참고 문서 — 평면 시작, 쌓이면 폴더 승격</h3>
+      <table style="margin:4px 0 0">
+        <tr><td style="width:46%">모듈 문서 1~2개</td><td>평면 <span class="mono">docs/library-카드정렬.md</span> (이름 접두)</td></tr>
+        <tr><td>모듈 문서 3개 이상</td><td><span class="mono">docs/library/</span> 폴더로 승격</td></tr>
+        <tr><td>빈 모듈 폴더 미리 만들기</td><td class="r">하지 않음</td></tr>
+        <tr><td>어느 경우든</td><td><b><span class="mono">docs/README.md</span> 색인 유지</b></td></tr>
+      </table>
+    </div>
+
+    <div class="fname">예시 — 한 프로젝트의 docs/ 내부</div>
+    <div class="code"><button class="cp">복사</button><pre>docs/
+├── PROGRESS.md          <span class="cm"># 한 세트 — 모듈은 [library] 태그</span>
+├── DECISIONS.md         <span class="cm"># 한 세트</span>
+├── PROJECT_PLAN.md      <span class="cm"># 한 파일 안에 모듈별 섹션</span>
+├── README.md            <span class="cm"># 어디에 뭐가 있는지 색인</span>
+├── library-카드정렬.md      <span class="cm"># 적을 땐 평면 + 이름 접두</span>
+└── work-support/            <span class="cm"># 3개 이상 쌓이면 폴더 승격</span>
+    ├── 게시판-규칙.md
+    ├── 카테고리-트리.md
+    └── 워크플로-명세.md</pre></div>
+    <div class="note"><span class="ic">💡</span><div>한마디로 — <b>기록은 한 세트(+태그), 주제 문서는 적으면 평면·많으면 폴더.</b> 미리 폴더부터 파지 말 것.</div></div>
+  </section>
+
+  <!-- 6. 매일 사용 -->
+  <section id="daily">
+    <h2><span class="n">6</span> 매일 어떻게 쓰나</h2>
+    <ol class="steps">
+      <li>프로젝트 폴더에서 Claude 실행</li>
+      <li><span class="mono">/resume</span> → 지난 기록 읽고 "지난 작업 X, 다음 Y?" 확인</li>
+      <li>작업 → 코드 수정</li>
+      <li><span class="mono">/wrap</span> → 오늘 한 일을 <span class="mono">docs/PROGRESS.md</span>에 기록</li>
+      <li>git 커밋·푸시 (변경 기록도 함께 공유)</li>
+    </ol>
+    <div class="note"><span class="ic">🔀</span><div><b>여러 프로젝트를 고쳤다면</b> — 주로 작업한 프로젝트에 자세히 기록·커밋하고, 함께 바뀐 프로젝트에도 한 줄 교차 기록·커밋. <b>커밋은 프로젝트마다 따로</b>(각각 독립 git).</div></div>
+  </section>
+
+  <!-- 7. 체크리스트 -->
+  <section id="check">
+    <h2><span class="n">7</span> 시작 체크리스트</h2>
+    <p class="lead">클릭해서 표시할 수 있습니다. (이 브라우저에 자동 저장)</p>
+    <ul class="check" id="checklist">
+      <li data-k="c1"><span class="bx">✓</span><span class="lb">세 프로젝트에 <span class="mono">.gitignore</span>로 개인 파일(<span class="mono">settings.local.json</span>·<span class="mono">CLAUDE.local.md</span>) 제외</span></li>
+      <li data-k="c2"><span class="bx">✓</span><span class="lb">세 프로젝트 공유 구성(<span class="mono">CLAUDE.md</span>·<span class="mono">.claude</span>·<span class="mono">docs</span>) 커밋·푸시</span></li>
+      <li data-k="c3"><span class="bx">✓</span><span class="lb">"크로스-프로젝트는 양쪽에 기록" 약속 합의 (방법 A로 시작)</span></li>
+      <li data-k="c4"><span class="bx">✓</span><span class="lb">작업 기록 3종은 프로젝트당 한 세트 + <span class="mono">[모듈]</span> 태그로 통일</span></li>
+      <li data-k="c5"><span class="bx">✓</span><span class="lb">주제 문서는 평면 시작 → 쌓이면 <span class="mono">docs/&lt;모듈&gt;/</span> 승격, <span class="mono">README.md</span> 색인 유지</span></li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    SFA · Claude Code 구성·사용 가이드 (팀 공유판) · <span class="mono">docs/claude-team-setup-guide.md</span> 기반 · 함께 다듬어 갑니다.
+  </div>
+</div>
+
+<script>
+  var root=document.documentElement, tb=document.getElementById('themeBtn');
+  function setTheme(t){root.setAttribute('data-theme',t);tb.textContent=t==='light'?'☀️ 라이트':'🌙 다크';}
+  setTheme('dark');
+  tb.onclick=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+
+  // tabs
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.onclick=function(){
+      var k=t.dataset.t;
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);});
+      document.querySelectorAll('.tp').forEach(function(p){p.classList.toggle('on',p.dataset.t===k);});
+    };
+  });
+
+  // copy
+  document.querySelectorAll('.code .cp').forEach(function(b){
+    b.onclick=function(){
+      var pre=b.parentNode.querySelector('pre');
+      navigator.clipboard&&navigator.clipboard.writeText(pre.innerText).then(function(){
+        var o=b.textContent;b.textContent='복사됨 ✓';setTimeout(function(){b.textContent=o;},1200);
+      });
+    };
+  });
+
+  // wizard
+  var ans={}, ws=document.querySelectorAll('.ws');
+  function showWs(i){ws.forEach(function(s,idx){s.classList.toggle('on',idx===i);});document.getElementById('res').classList.remove('on');}
+  document.querySelectorAll('.opt').forEach(function(o){
+    o.onclick=function(){
+      var q=o.dataset.q; o.parentNode.querySelectorAll('.opt').forEach(function(x){x.classList.remove('on');}); o.classList.add('on'); ans[q]=o.dataset.v;
+      var nx=parseInt(q)+1; setTimeout(function(){ nx<2?showWs(nx):finish(); },160);
+    };
+  });
+  function finish(){
+    ws.forEach(function(s){s.classList.remove('on');});
+    var rec,why;
+    if(ans['0']==='no'){ rec='방법 A (각 프로젝트 기록 + 교차 한 줄)'; why='자기 프로젝트 위주로 보니 — 새 인프라 없는 방법 A가 가장 단순하고 잘 맞습니다.'; }
+    else if(ans['1']==='yes'){ rec='방법 B (공유 기록 저장소)'; why='전체 흐름을 봐야 하고 서브모듈도 감당 가능하니 — 한 곳에 모으는 방법 B가 깔끔합니다.'; }
+    else{ rec='방법 C (하이브리드)'; why='전체 흐름은 보고 싶지만 서브모듈 부담은 줄이고 싶으니 — 결정만 공유하는 방법 C로 절충하세요.'; }
+    document.getElementById('resName').textContent=rec;
+    document.getElementById('resWhy').textContent=why;
+    document.getElementById('res').classList.add('on');
+  }
+  window.resetWiz=function(){ans={};document.querySelectorAll('.opt').forEach(function(x){x.classList.remove('on');});showWs(0);};
+  showWs(0);
+
+  // checklist (localStorage)
+  var CK='sfa-claude-guide-check';
+  var done={};
+  try{var s=localStorage.getItem(CK); if(s) done=JSON.parse(s);}catch(e){}
+  document.querySelectorAll('#checklist li').forEach(function(li){
+    var k=li.dataset.k;
+    if(done[k]) li.classList.add('done');
+    li.onclick=function(){
+      li.classList.toggle('done'); done[k]=li.classList.contains('done');
+      try{localStorage.setItem(CK,JSON.stringify(done));}catch(e){}
+    };
+  });
+</script>
+</body>
+</html>
