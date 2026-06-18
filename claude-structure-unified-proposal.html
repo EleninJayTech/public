@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFA · Claude Code 문서 구조 통합안 (cross-repo + 모노레포 동시성)</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#171c24; --panel2:#1e242e; --line:#2a323d;
+    --tx:#e6edf3; --tx2:#9aa7b4; --tx3:#6b7785;
+    --acc:#4aa3ff; --acc2:#7c5cff; --ok:#2ecc71; --warn:#ffb454; --bad:#ff6b6b;
+    --chip:#222a35; --rec:#16331f;
+    --radius:14px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  html[data-theme="light"]{
+    --bg:#f4f6f9; --panel:#ffffff; --panel2:#f0f3f7; --line:#dfe5ec;
+    --tx:#1a2129; --tx2:#5a6675; --tx3:#8b97a5; --chip:#eef2f7; --rec:#e6f7ec;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px 120px;}
+
+  header{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+  .head-in{max-width:1040px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .brand{font-weight:800;font-size:15px}.brand b{color:var(--acc)}
+  nav{display:flex;gap:3px;flex-wrap:wrap;margin-left:auto}
+  nav a{color:var(--tx2);text-decoration:none;font-size:12.5px;padding:6px 9px;border-radius:8px}
+  nav a:hover{background:var(--chip);color:var(--tx)}
+  .tgl{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--tx2);border-radius:8px;padding:6px 10px;font-size:13px}
+  .tgl:hover{color:var(--tx)}
+
+  .hero{padding:46px 0 14px}
+  .kicker{color:var(--acc2);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase}
+  h1{font-size:30px;line-height:1.25;margin:10px 0 8px;letter-spacing:-.5px}
+  .sub{color:var(--tx2);font-size:16px;max-width:780px}
+  .merge{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .mtag{font-size:12.5px;background:var(--chip);border:1px solid var(--line);padding:6px 12px;border-radius:10px}
+  .mtag b{color:var(--acc)}
+
+  .tldr{background:var(--rec);border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:12px;padding:16px 18px;margin:20px 0}
+  .tldr ul{margin:6px 0 0;padding-left:20px}.tldr li{margin:4px 0;font-size:14.5px}
+
+  section{padding:32px 0;border-top:1px solid var(--line)}
+  h2{font-size:21px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .n{font-family:var(--mono);font-size:13px;color:var(--bg);background:var(--acc);width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-weight:700;flex:none}
+  h3{font-size:15.5px;margin:16px 0 6px}
+  .lead{color:var(--tx2);margin:0 0 14px;max-width:840px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:14px 0}
+  .note{display:flex;gap:12px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:14px 16px;margin:14px 0}
+  .note .ic{font-size:18px;flex:none}
+  .note.rec{border-left-color:var(--ok);background:var(--rec)}
+  .note.warn{border-left-color:var(--warn)}
+
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--tx2);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  .mono,code{font-family:var(--mono);font-size:12.5px;background:var(--chip);padding:1px 6px;border-radius:5px}
+  .g{color:var(--ok);font-weight:700}.r{color:var(--bad);font-weight:700}.y{color:var(--warn);font-weight:700}
+
+  /* two-layer visual */
+  .layer{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0;position:relative}
+  .layer .lt{position:absolute;top:-10px;left:14px;font-size:11px;font-family:var(--mono);font-weight:700;padding:1px 9px;border-radius:999px}
+  .layer.inter{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 7%,var(--panel))}
+  .layer.inter .lt{background:var(--acc);color:#04223f}
+  .layer.intra{border-color:var(--acc2);background:color-mix(in srgb,var(--acc2) 7%,var(--panel))}
+  .layer.intra .lt{background:var(--acc2);color:#fff}
+  .layer p{margin:6px 0 0;font-size:13.5px;color:var(--tx2)}
+  .between{text-align:center;color:var(--tx3);font-size:12px;font-family:var(--mono);margin:2px 0}
+
+  /* code */
+  .code{position:relative;background:#0b0e13;border:1px solid var(--line);border-radius:10px;margin:10px 0}
+  html[data-theme="light"] .code{background:#0f141b}
+  .code pre{margin:0;padding:14px 16px;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#cdd9e5}
+  .code .cp{position:absolute;top:8px;right:8px;cursor:pointer;border:1px solid #2a323d;background:#171c24;color:#9aa7b4;border-radius:7px;padding:3px 9px;font-size:11px}
+  .code .cp:hover{color:#fff;border-color:var(--acc)}
+  .cm{color:#6b7785}
+  .fname{font-family:var(--mono);font-size:11px;color:var(--tx3);padding:8px 4px 0}
+
+  /* status badges */
+  .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-weight:800;font-size:12px;margin-right:6px}
+  .b-done{background:#16331f;color:#a5d6a7;border:1px solid #2e7d4f}
+  .b-pend{background:#3a2a12;color:#ffcc80;border:1px solid #b06f1e}
+  .b-block{background:#3a1717;color:#ef9a9a;border:1px solid #a13b3b}
+  html[data-theme="light"] .b-done{background:#e6f7ec;color:#1b7a3d}
+  html[data-theme="light"] .b-pend{background:#fff3e0;color:#b06f1e}
+  html[data-theme="light"] .b-block{background:#fdecea;color:#b3261e}
+
+  .foot{color:var(--tx3);font-size:12.5px;text-align:center;padding-top:40px}
+</style>
+</head>
+<body>
+<header>
+  <div class="head-in">
+    <div class="brand"><b>Claude</b> 문서 구조 통합안</div>
+    <nav>
+      <a href="#layers">두 층</a>
+      <a href="#split">분할 기준</a>
+      <a href="#token">토큰</a>
+      <a href="#mono">프론트 구조</a>
+      <a href="#skill">skill</a>
+      <a href="#methodA">방법 A</a>
+      <a href="#status">상태</a>
+      <a href="#rules">규칙 블록</a>
+      <a href="#matrix">매트릭스</a>
+    </nav>
+    <button class="tgl" id="themeBtn">🌙 다크</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">두 팀 합의용 초안 · 통합안</div>
+    <h1>cross-repo + 모노레포 동시성을<br>하나로 합친 문서 구조</h1>
+    <p class="sub">두 조사를 합쳤습니다. 경쟁이 아니라 <b>다른 층</b>을 다루고 있었고, 충돌점 하나(작업 기록 분할)는 <b>동시성 기준</b>으로 정리했습니다.</p>
+    <div class="merge">
+      <span class="mtag"><b>(A) cross-repo 조사</b> — 3 repo 사이 조정</span>
+      <span class="mtag"><b>(B) 프론트팀 논의서</b> — 모노레포 내부 동시성</span>
+    </div>
+
+    <div class="tldr">
+      <b>📌 한 장 요약</b>
+      <ul>
+        <li>두 조사는 <b>다른 층</b> (A) repo <i>간</i> / (B) 한 repo <i>안</i> → <b>둘 다 채택, 층으로 결합.</b></li>
+        <li>작업 기록 분할은 <b>동시 편집자 수</b>로 결정 — 저동시성=<span class="mono">1세트+[모듈]태그</span>, 고동시성 모노레포=<span class="mono">앱별 폴더 분할</span>.</li>
+        <li><b>토큰은 구조로 거의 안 줄어든다.</b> 분할의 진짜 가치는 <b>Git 충돌 차단 + 타겟 정확도</b>.</li>
+        <li>어느 층이든 "여러 대상을 건드리면 <b>각 대상에 기록(방법 A)</b>"은 동일.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 1 두 층 -->
+  <section id="layers">
+    <h2><span class="n">1</span> 두 층 모델 (핵심 프레임)</h2>
+    <p class="lead">두 문서는 서로 다른 층을 다룹니다. 독립적으로 동시에 적용됩니다.</p>
+    <div class="layer inter">
+      <span class="lt">inter-repo · (A) 우리 조사</span>
+      <p style="margin-top:10px"><b style="color:var(--tx)">단위: repo 3개</b>(프론트·백엔드·RAG) · 문제: 한 작업이 <b>여러 repo</b>를 건드림 · 해법: <span class="mono">additionalDirectories</span> · 방법 A · repomix</p>
+    </div>
+    <div class="between">▲ 이 좌표계 위에 ▼ 고동시성 repo(프론트)는 아래 층을 얹는다</div>
+    <div class="layer intra">
+      <span class="lt">intra-repo · (B) 프론트팀</span>
+      <p style="margin-top:10px"><b style="color:var(--tx)">단위: 한 repo 안 앱/모듈</b> · 문제: 여러 명이 <b>한 PROGRESS.md</b>에 append → Git 충돌 · 해법: 앱별 분할</p>
+    </div>
+  </section>
+
+  <!-- 2 분할 기준 -->
+  <section id="split">
+    <h2><span class="n">2</span> 작업 기록 분할 — 동시성 기준 결정</h2>
+    <p class="lead">(A)는 "분할 금지(1세트+태그)", (B)는 "솔루션별 분할". <b>정답은 동시 편집자 수에 달려 있습니다.</b></p>
+    <table>
+      <thead><tr><th style="width:46%">상황</th><th style="width:26%">권장</th><th>이유</th></tr></thead>
+      <tbody>
+        <tr><td>한 repo에 <b>개발자 1~2명</b>, 모듈 경계 흐림</td><td class="g">1세트 + <span class="mono">[모듈]</span> 태그</td><td>타임라인 보존·단순, 충돌 드묾</td></tr>
+        <tr><td>한 repo에 <b>여러 명·앱별 담당 고정</b></td><td class="y">앱별 폴더 분할(③안)</td><td>Git 충돌 원천 차단 &gt; 타임라인 이점</td></tr>
+      </tbody>
+    </table>
+    <div class="card">
+      <h3 style="margin-top:0">3 repo 적용</h3>
+      <ul style="margin:0;padding-left:18px;font-size:14px;color:var(--tx2)">
+        <li><span class="mono">sfa-client-main</span> (Turborepo, 6~7앱·앱별 담당) → <b>앱별 폴더 분할</b></li>
+        <li><span class="mono">sfa-server</span> / <span class="mono">sfa-rag</span> (동시성 낮음) → <b>1세트 + [모듈] 태그</b> (편집 인원 늘면 분할로 전환)</li>
+      </ul>
+    </div>
+    <div class="note rec"><span class="ic">💡</span><div>분할은 <b>충돌 잦은 <span class="mono">PROGRESS</span>/<span class="mono">DECISIONS</span>만</b>. 저빈도 <b>마스터 <span class="mono">PROJECT_PLAN</span>은 루트에 공유</b>(전사 인덱스). — (B) ③안의 영리한 절충.</div></div>
+  </section>
+
+  <!-- 3 토큰 -->
+  <section id="token">
+    <h2><span class="n">3</span> 토큰의 진실 ((B) 분석 반영)</h2>
+    <div class="card">
+      <ul style="margin:0;padding-left:18px;font-size:14.5px;color:var(--tx2)">
+        <li>Claude Code는 <span class="mono">docs/</span> 문서를 <b>자동으로 선로딩하지 않음</b> — 도구로 <b>필요할 때만</b> 읽음. → "구조로 토큰 수십% 절감"은 <b class="r">사실이 아님</b>.</li>
+        <li>오히려 앱 디렉토리의 <span class="mono">CLAUDE.md</span>는 그 폴더 작업 시 <b>lazy-load되어 정적 컨텍스트가 소폭 늘</b> 수 있음.</li>
+        <li><b>결론:</b> 구조는 토큰이 아니라 ① Git 충돌 차단 ② 타겟 정확도(남의 문서 오작성 방지) ③ 가독성 기준으로 고른다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 프론트 구조 -->
+  <section id="mono">
+    <h2><span class="n">4</span> 프론트 모노레포 구조 — ③안 채택</h2>
+    <div class="fname">sfa-client-main/</div>
+    <div class="code"><button class="cp">복사</button><pre>sfa-client-main/
+├── CLAUDE.md                  <span class="cm"># [전역] 프론트 공통 규칙 + 문서·기록 규칙 블록</span>
+├── .gitignore                 <span class="cm"># .claude/settings.local.json, CLAUDE.local.md 제외</span>
+└── docs/
+    ├── PROJECT_PLAN.md        <span class="cm"># [공통] 마스터 로드맵 + 활성 앱 인덱스 (루트 공유)</span>
+    ├── README.md              <span class="cm"># 색인</span>
+    ├── work-support/          <span class="cm"># 📂 앱별 폴더 (충돌 0)</span>
+    │   ├── PROGRESS.md        <span class="cm">#   진척도 (이 앱 담당자만 append)</span>
+    │   ├── DECISIONS.md
+    │   └── 게시판-규칙.md       <span class="cm">#   [특화] 주제 문서</span>
+    └── approval/
+        ├── PROGRESS.md
+        └── 전자결제-라인-컨벤션.md</pre></div>
+    <p class="lead" style="margin:0">앱별 폴더라 <b>서로 다른 파일을 편집</b> → Git 충돌 사라짐. 루트 <span class="mono">PROJECT_PLAN.md</span>만 공유(가끔 충돌하나 저빈도·단순 머지).</p>
+  </section>
+
+  <!-- 5 skill -->
+  <section id="skill">
+    <h2><span class="n">5</span> <code>/resume</code>·<code>/wrap</code> 을 솔루션-aware 로 (분할이 동작하는 핵심)</h2>
+    <p class="lead">기록을 <span class="mono">docs/&lt;app&gt;/</span>로 쪼개면 skill이 <b>어느 앱 문서를 읽고 쓸지</b> 판별해야 합니다.</p>
+    <div class="code"><button class="cp">복사</button><pre><span class="cm"># /resume (모노레포·솔루션-aware)</span>
+대상 앱 판별 우선순위:
+1) 현재 작업 디렉토리(PWD)가 apps/&lt;app&gt; 안이면 → 그 &lt;app&gt;
+2) 아니면 현재 브랜치명에서 추출(feature/work-support → work-support)
+3) 둘 다 불명확하면 → "오늘 작업할 앱을 골라주세요: [main, work-support, approval...]" 질문
+판별 후: docs/&lt;app&gt;/PROGRESS.md 최상단 + docs/PROJECT_PLAN.md를 읽고
+"이 앱의 지난 작업 X, 다음 Y?"로 보고.
+
+<span class="cm"># /wrap (모노레포·솔루션-aware)</span>
+- 같은 우선순위로 대상 앱 판별 → docs/&lt;app&gt;/PROGRESS.md 최상단에 [상태] 포함 기록.
+- 완료 모호 시 독단 기록 금지, "남은 로직 있는데 [⏳미완]으로 추가할까요?" 확인.</pre></div>
+    <div class="note"><span class="ic">↔️</span><div><span class="mono">sfa-server</span>/<span class="mono">sfa-rag</span>(미분할)는 기존 단순 skill 그대로(고정 <span class="mono">docs/PROGRESS.md</span>).</div></div>
+  </section>
+
+  <!-- 6 방법 A -->
+  <section id="methodA">
+    <h2><span class="n">6</span> 여러 대상 동시 작업 = 방법 A (두 층 공통)</h2>
+    <p class="lead">분할은 "어디에 기록?" 문제를 <b>앱 층에서 재현</b>합니다(앱 A+B 동시 수정). repo 층과 <b>같은 원칙</b>으로 해결.</p>
+    <div class="note rec"><span class="ic">🎯</span><div><b>주로 작업한 대상에 본문</b>, 함께 바뀐 대상엔 <b><span class="mono">[공통]</span> 교차 한 줄 + 링크.</b></div></div>
+    <table>
+      <tbody>
+        <tr><td style="width:22%"><b>repo 간</b></td><td>다른 repo가 <span class="mono">additionalDirectories</span>로 접근 가능하면 자동 교차기록, 아니면 "기록 필요" 알림</td></tr>
+        <tr><td><b>앱 간</b></td><td>다른 앱 <span class="mono">docs/&lt;app&gt;/PROGRESS.md</span>에 <span class="mono">[공통] … → work-support PROGRESS 참고</span> 한 줄</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7 상태 -->
+  <section id="status">
+    <h2><span class="n">7</span> 상태 taxonomy (선택)</h2>
+    <p class="lead">우리 4섹션(작업/결정/다음/미해결)은 유지하되, 항목에 상태 뱃지를 병기:</p>
+    <div class="card">
+      <div style="margin:4px 0"><span class="badge b-done">🚀 Done</span> 완결 — PR/병합 가능한 독립 완결</div>
+      <div style="margin:4px 0"><span class="badge b-pend">⏳ Pending</span> 미완 — 정상 빌드, 잔여 스펙 있어 이어서</div>
+      <div style="margin:4px 0"><span class="badge b-block">🚨 Blocked</span> 블록 — 컴파일 에러/외부 의존 교착으로 동결</div>
+    </div>
+    <div class="code"><button class="cp">복사</button><pre>- [work-support][Done] 게시판 카테고리 트리 추가
+- [approval][Blocked] 결제선 자동지정 — 백엔드 API 미개발 대기</pre></div>
+  </section>
+
+  <!-- 8 규칙 블록 -->
+  <section id="rules">
+    <h2><span class="n">8</span> 통합 <code>CLAUDE.md</code> 규칙 블록 (복붙)</h2>
+    <p class="lead">각 repo <span class="mono">CLAUDE.md</span> 끝에 추가. <b>이 블록이 아래 규칙을 Claude가 자동 적용하게 합니다.</b></p>
+    <div class="code"><button class="cp">복사</button><pre>## 문서·기록 규칙 (Claude가 자동 적용)
+
+### 작업 기록 구조 (동시성 기준)
+- 저동시성 repo: PROGRESS·DECISIONS·PROJECT_PLAN을 한 세트로 두고 항목 앞에 [모듈] 태그.
+- 고동시성 모노레포(이 repo가 해당이면): PROGRESS·DECISIONS는 docs/&lt;app&gt;/ 로 분리,
+  마스터 PROJECT_PLAN.md만 docs/ 루트에 공유. /resume·/wrap은 대상 앱을 PWD>브랜치>질문 순으로 판별.
+- 기록 항목엔 상태 [Done]/[Pending]/[Blocked]를 병기한다.
+
+### 여러 대상 동시 변경 (방법 A)
+- 주로 작업한 대상(repo 또는 app) docs에 본문 기록, 함께 바뀐 대상엔 [공통] 교차 한 줄 + 링크.
+- 다른 repo는 접근 가능(cwd 또는 .claude/settings.json의 additionalDirectories)하면 자동 기록,
+  불가하면 사용자에게 "○○에도 기록 필요"를 알린다.
+
+### 주제·참고 문서 배치
+- 평면(docs/*.md, 이름 접두)으로 시작 → 한 모듈/앱 주제 문서 3개+면 docs/&lt;모듈&gt;/ 승격. 빈 폴더 금지. README 색인 유지.
+
+### 길이 관리
+- PROGRESS가 약 800줄/분기 경계를 넘으면 가장 오래된 분기를 docs/archive/PROGRESS-&lt;기간&gt;.md로 옮기고
+  활성 파일 맨 아래 포인터 한 줄. DECISIONS는 [[DEC-NNN]] 참조 보호 위해 상단 색인 유지 후 본문만 이동.
+
+### 공유 vs 개인 / 시크릿
+- 공유(커밋): CLAUDE.md·.claude/skills·.claude/settings.json·docs/.
+- 개인(커밋 금지): .claude/settings.local.json·CLAUDE.local.md.
+- 시크릿(.env·키·비밀번호)은 읽지도 커밋하지도 않는다.
+
+### 토큰 참고
+- docs/는 자동 선로딩되지 않고 필요 시만 읽힌다. 구조는 토큰이 아니라 충돌 차단·타겟 정확도 기준으로 고른다.</pre></div>
+  </section>
+
+  <!-- 9 매트릭스 -->
+  <section id="matrix">
+    <h2><span class="n">9</span> 적용 매트릭스 (3 repo)</h2>
+    <table>
+      <thead><tr><th>repo</th><th>작업 기록 구조</th><th>skill</th><th>cross-repo</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">sfa-client-main</span></td><td class="y">앱별 폴더 분할 <span class="mono">docs/&lt;app&gt;/</span> + 루트 <span class="mono">PROJECT_PLAN</span></td><td>솔루션-aware(§5)</td><td><span class="mono">["../sfa-server"]</span></td></tr>
+        <tr><td><span class="mono">sfa-server</span></td><td class="g">1세트 + <span class="mono">[모듈]</span> 태그 <span style="color:var(--tx3)">(동시성↑ 시 분할)</span></td><td>단순(고정 경로)</td><td>필요 시 등록</td></tr>
+        <tr><td><span class="mono">sfa-rag</span></td><td class="g">1세트 + <span class="mono">[모듈]</span> 태그</td><td>단순</td><td>필요 시 등록</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><span class="ic">🧰</span><div><b>그대로 유지되는 (A) 자산</b> — <span class="mono">additionalDirectories</span>(자동 교차기록) · repomix <span class="mono">ast-context.xml</span>(통신 규약 패킹) · 시간 아카이브(길이 관리).</div></div>
+  </section>
+
+  <div class="foot">
+    SFA · Claude Code 문서 구조 통합안 · (A) cross-repo 조사 + (B) 프론트팀 모노레포 논의서 합본 · 두 팀 합의용 초안<br>
+    원본 <span class="mono">docs/claude/claude-structure-unified-proposal.md</span> 기반.
+  </div>
+</div>
+
+<script>
+  var root=document.documentElement, tb=document.getElementById('themeBtn');
+  function setTheme(t){root.setAttribute('data-theme',t);tb.textContent=t==='light'?'☀️ 라이트':'🌙 다크';}
+  setTheme('dark');
+  tb.onclick=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+
+  document.querySelectorAll('.code .cp').forEach(function(b){
+    b.onclick=function(){
+      var pre=b.parentNode.querySelector('pre');
+      navigator.clipboard&&navigator.clipboard.writeText(pre.innerText).then(function(){
+        var o=b.textContent;b.textContent='복사됨 ✓';setTimeout(function(){b.textContent=o;},1200);
+      });
+    };
+  });
+</script>
+</body>
+</html>
