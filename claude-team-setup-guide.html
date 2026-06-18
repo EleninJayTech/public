@@ -327,6 +327,17 @@ git push</pre></div>
     ├── 카테고리-트리.md
     └── 워크플로-명세.md</pre></div>
     <div class="note"><span class="ic">💡</span><div>한마디로 — <b>기록은 한 세트(+태그), 주제 문서는 적으면 평면·많으면 폴더.</b> 미리 폴더부터 파지 말 것.</div></div>
+
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--acc)">길어지면 — 시간으로 아카이브 (모듈로 쪼개지 않음)</h3>
+      <p style="color:var(--tx2);font-size:14px;margin:0">여러 명이 오래 쓰면 <span class="mono">PROGRESS.md</span>가 매우 길어집니다. 작업 기록은 <b>모듈로 나누지 말고 오래된 분기를 잘라내</b> 관리합니다.</p>
+      <ul style="margin:8px 0 0;padding-left:18px;color:var(--tx2);font-size:13.5px">
+        <li>활성 <span class="mono">PROGRESS.md</span>엔 <b>최근 것만</b>(예: 최근 1~2개월/약 800줄). 오래된 분기는 <span class="mono">docs/archive/PROGRESS-&lt;기간&gt;.md</span>로 옮기고 맨 아래에 포인터 한 줄.</li>
+        <li><span class="mono">/resume</span>는 <b>최상단 1개만</b> 읽으므로, 활성 파일이 짧으면 <b>토큰·가독성·머지 충돌</b>이 모두 줄어듭니다.</li>
+        <li><span class="mono">DECISIONS.md</span>는 번호·<span class="mono">[[DEC-NNN]]</span> 참조가 깨지지 않게 <b>상단 색인 유지</b> 후 본문만 아카이브.</li>
+        <li>(멀티 충돌 완화) <span class="mono">/wrap</span> 전 <span class="mono">git pull</span> + 크로스-프로젝트 분산(3 repo)으로 한 파일당 편집 인원이 줄어듭니다.</li>
+      </ul>
+    </div>
   </section>
 
   <!-- 6. 매일 사용 -->
